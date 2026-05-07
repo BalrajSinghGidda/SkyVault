@@ -60,7 +60,19 @@ NODE_ENV=production
 
 #### 2.3 Setup MongoDB
 
-**Local MongoDB:**
+**🐧 For NixOS Users:**
+⚠️ MongoDB Community Edition is not available in NixOS nixpkgs.
+
+👉 **See MONGODB_SETUP.md for detailed NixOS instructions!**
+
+Quick options:
+- Option 1: **MongoDB Atlas** (Recommended) - Free cloud database
+- Option 2: **Docker** - Local MongoDB in container
+- Option 3: **System package** - If available
+
+---
+
+**Local MongoDB (macOS/Linux with Homebrew):**
 ```bash
 # macOS with Homebrew
 brew services start mongodb-community
@@ -69,13 +81,19 @@ brew services start mongodb-community
 mongod --dbpath ./data/db
 ```
 
-**Cloud MongoDB (Atlas):**
+**Cloud MongoDB (Atlas - Works Everywhere):**
 1. Go to https://www.mongodb.com/cloud/atlas
 2. Create a free cluster
 3. Get connection string: `mongodb+srv://user:password@cluster.mongodb.net/skyvault`
 4. Update `MONGO_URI` in `.env`
 
-#### 2.4 Start Backend Server
+**Docker (NixOS Friendly):**
+```bash
+docker run -d -p 27017:27017 --name skyvault-mongo mongo:latest
+# Then use: MONGO_URI=mongodb://localhost:27017/skyvault
+```
+
+---#### 2.4 Start Backend Server
 
 ```bash
 # Development (with auto-reload)
