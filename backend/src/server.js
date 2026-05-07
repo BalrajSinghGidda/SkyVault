@@ -12,7 +12,23 @@ connectDB();
 
 // Middleware
 app.use(helmet());
-app.use(cors());
+
+// CORS Configuration - Allow frontend on different ports
+const corsOptions = {
+  origin: [
+    'http://localhost:8000',
+    'http://localhost:3000',
+    'http://127.0.0.1:8000',
+    'http://127.0.0.1:3000',
+    'http://localhost',
+    'http://127.0.0.1',
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+app.use(cors(corsOptions));
+
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

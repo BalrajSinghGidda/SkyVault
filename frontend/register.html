@@ -42,6 +42,15 @@
 
   <script src="js/auth.js"></script>
   <script>
+    // Detect API URL
+    const getAPIUrl = () => {
+      const hostname = window.location.hostname;
+      return `http://${hostname}:5000/api`;
+    };
+    
+    const API_URL = getAPIUrl();
+    console.log('📡 API URL:', API_URL);
+
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       const username = document.getElementById('username').value;
@@ -49,7 +58,7 @@
       const password = document.getElementById('password').value;
 
       try {
-        const response = await fetch('http://localhost:5000/api/auth/register', {
+        const response = await fetch(`${API_URL}/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, email, password }),
@@ -64,11 +73,13 @@
           messageEl.classList.add('success');
           setTimeout(() => window.location.href = 'dashboard.html', 1500);
         } else {
-          messageEl.textContent = '❌ ' + data.error;
+          messageEl.textContent = '❌ ' + (data.error || 'Registration failed');
           messageEl.classList.add('error');
         }
       } catch (error) {
-        document.getElementById('message').textContent = '❌ Error: ' + error.message;
+        console.error('Registration error:', error);
+        document.getElementById('message').textContent = '❌ Connection error: ' + error.message + '\n\nMake sure backend is running on port 5000';
+        document.getElementById('message').classList.add('error');
       }
     });
   </script>
