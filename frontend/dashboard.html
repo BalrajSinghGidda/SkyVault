@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - SkyVault</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <h1 class="logo">☁️ SkyVault</h1>
+      <div class="nav-links">
+        <a href="dashboard.html">Dashboard</a>
+        <a href="#" id="logoutLink">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="dashboard">
+    <div class="container">
+      <h1>Your Dashboard</h1>
+
+      <section class="storage-info">
+        <h2>Storage Usage</h2>
+        <div id="storageStats" class="stats">
+          <p>Loading...</p>
+        </div>
+      </section>
+
+      <section class="files-section">
+        <h2>Your Files</h2>
+        <div class="upload-area">
+          <input type="file" id="fileInput" />
+          <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+            📤 Upload File
+          </button>
+        </div>
+        <div id="filesList" class="files-list">
+          <p>Loading files...</p>
+        </div>
+      </section>
+
+      <section class="activity-section">
+        <h2>Recent Activity</h2>
+        <div id="activityLog" class="activity-log">
+          <p>Loading activity...</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/auth.js"></script>
+  <script>
+    const API_URL = 'http://localhost:5000/api';
+
+    // Check if user is logged in
+    function checkAuth() {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = 'login.html';
+      }
+    }
+
+    // Logout
+    document.getElementById('logoutLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      localStorage.removeItem('token');
+      window.location.href = 'index.html';
+    });
+
+    // Get storage stats
+    async function loadStorageStats() {
+      const token = localStorage.getItem('token');
+      try {
+        const response = await fetch(`${API_URL}/dashboard/storage`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        const data = await response.json();
+        const statsDiv = document.getElementById('storageStats');
+        statsDiv.innerHTML = `
+          <p>Used: ${(data.totalSize / 1024 / 1024).toFixed(2)} MB / ${(data.maxStorage / 1024 / 1024).toFixed(2)} MB</p>
+          <p>Usage: ${data.usedPercentage}%</p>
+          <p>Files: ${data.fileCount}</p>
+        `;
+      } catch (error) {
+        document.getElementById('storageStats').innerHTML = `<p>Error: ${error.message}</p>`;
+      }
+    }
+
+    // Load files
+    async function loadFiles() {
+      const token = localStorage.getItem('token');
+      try {
+        const response = await fetch(`${API_URL}/files`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        const files = await response.json();
+        const filesList = document.getElementById('filesList');
+
+        if (files.length === 0) {
+          filesList.innerHTML = '<p>No files uploaded yet</p>';
+          return;
+        }
+
+        filesList.innerHTML = files.map(file => `
+          <div class="file-item">
+            <span>${file.filename}</span>
+            <span>${(file.size / 1024 / 1024).toFixed(2)} MB</span>
+            <div>
+              <a href="${API_URL}/files/${file._id}/download" class="btn btn-small">⬇️ Download</a>
+              <button class="btn btn-small btn-danger" onclick="deleteFile('${file._id}')">🗑️ Delete</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        document.getElementById('filesList').innerHTML = `<p>Error: ${error.message}</p>`;
+      }
+    }
+
+    // Upload file
+    document.getElementById('fileInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const token = localStorage.getItem('token');
+      try {
+        const response = await fetch(`${API_URL}/files/upload`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData,
+        });
+
+        if (response.ok) {
+          alert('✅ File uploaded successfully');
+          loadFiles();
+          loadStorageStats();
+        } else {
+          alert('❌ Upload failed');
+        }
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    });
+
+    // Delete file
+    async function deleteFile(fileId) {
+      if (!confirm('Are you sure?')) return;
+
+      const token = localStorage.getItem('token');
+      try {
+        const response = await fetch(`${API_URL}/files/${fileId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (response.ok) {
+          loadFiles();
+          loadStorageStats();
+        }
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+
+    // Load activity
+    async function loadActivity() {
+      const token = localStorage.getItem('token');
+      try {
+        const response = await fetch(`${API_URL}/dashboard/activity`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        const logs = await response.json();
+        const activityDiv = document.getElementById('activityLog');
+
+        if (logs.length === 0) {
+          activityDiv.innerHTML = '<p>No activity yet</p>';
+          return;
+        }
+
+        activityDiv.innerHTML = logs.map(log => `
+          <div class="activity-item">
+            <span>${log.action.toUpperCase()}</span>
+            <span>${new Date(log.createdAt).toLocaleString()}</span>
+          </div>
+        `).join('');
+      } catch (error) {
+        document.getElementById('activityLog').innerHTML = `<p>Error: ${error.message}</p>`;
+      }
+    }
+
+    // Initialize
+    checkAuth();
+    loadStorageStats();
+    loadFiles();
+    loadActivity();
+  </script>
+</body>
+</html>
